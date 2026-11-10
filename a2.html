@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="ru">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A2 Grammar Check</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lora:wght@600;700&family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,700;6..12,800&display=swap">
+<style>
+:root{--bg:#FAF6F0;--surface:#FFFFFF;--ink:#2E2723;--muted:#7A6F67;--line:#E9E1D7;--acc:#C8704F;--acc-soft:#F8E6DD;--acc-ink:#8E4329;
+  --good:#2F8A57;--good-soft:#E0F2E7;--mid:#C89211;--mid-soft:#FBF0D3;--bad:#C94040;--bad-soft:#FBE4E4}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#191512;--surface:#231E1A;--ink:#F1E9E2;--muted:#B0A49A;--line:#382F29;--acc:#E7966F;--acc-soft:#3D251B;--acc-ink:#F6C6AE;--good:#5CCB8C;--good-soft:#173324;--mid:#F0C14E;--mid-soft:#3A2F12;--bad:#FF7A7A;--bad-soft:#3D1F1F}}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#191512;--surface:#231E1A;--ink:#F1E9E2;--muted:#B0A49A;--line:#382F29;--acc:#E7966F;--acc-soft:#3D251B;--acc-ink:#F6C6AE;--good:#5CCB8C;--good-soft:#173324;--mid:#F0C14E;--mid-soft:#3A2F12;--bad:#FF7A7A;--bad-soft:#3D1F1F}
+*{box-sizing:border-box}[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 "Nunito Sans",system-ui,sans-serif}
+h1,h2,h3{font-family:"Lora",Georgia,serif;margin:0;line-height:1.15}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.bar{position:sticky;top:0;z-index:10;background:color-mix(in srgb,var(--bg) 90%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.bar-in{max-width:860px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:12px}
+.prog{flex:1;height:10px;background:var(--line);border-radius:99px;overflow:hidden}
+.prog i{display:block;height:100%;width:0;background:var(--acc);border-radius:99px;transition:width .3s}
+.cnt{font-weight:800;font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.wrap{max-width:860px;margin:0 auto;padding:0 16px 80px}
+header{padding:36px 0 8px}
+.eyebrow{font-size:12.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--acc)}
+header h1{font-size:clamp(32px,6vw,46px);margin-top:6px}
+header p{color:var(--muted);max-width:60ch;margin:12px 0 0;font-size:16.5px}
+.how{display:grid;gap:6px;margin-top:16px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 18px;font-weight:600}
+.how b{color:var(--acc-ink)}
+.stage{margin-top:34px}
+.stage h2{font-size:21px;color:var(--acc-ink);display:flex;gap:10px;align-items:baseline}
+.stage h2 small{font:800 12px "Nunito Sans",sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.qs{display:grid;gap:10px;margin-top:12px}
+.q{background:var(--surface);border:1.5px solid var(--line);border-radius:16px;padding:14px 16px;display:grid;gap:10px}
+.q .top{display:flex;gap:10px;align-items:flex-start}
+.q .n{flex:none;width:28px;height:28px;border-radius:50%;background:var(--acc);color:#fff;display:grid;place-items:center;font-weight:800;font-size:13px;margin-top:1px}
+.q .t{font-weight:700;font-size:17px}
+.q .t .bl{display:inline-block;min-width:64px;border-bottom:2px solid var(--muted);text-align:center;color:var(--acc-ink)}
+.q .hint{display:block;color:var(--muted);font-weight:600;font-size:14px;margin-top:2px}
+.o{display:flex;flex-wrap:wrap;gap:8px;padding-left:38px}
+.o button{border:1.5px solid var(--line);background:var(--bg);border-radius:12px;padding:8px 14px;font-weight:700;font-size:15.5px;text-align:left}
+.o button:hover{border-color:var(--acc)}
+.o button.sel{background:var(--acc-soft);border-color:var(--acc);color:var(--acc-ink)}
+.o button.idk{border-style:dashed;color:var(--muted);font-weight:600}
+.o button.idk.sel{background:var(--line);border-color:var(--muted);color:var(--ink)}
+.checked .o button{cursor:default}
+.checked .o button.right{background:var(--good-soft);border-color:var(--good);color:var(--good)}
+.checked .o button.sel.wrong{background:var(--bad-soft);border-color:var(--bad);color:var(--bad);text-decoration:line-through}
+.q.ok{border-color:var(--good)}.q.no{border-color:var(--bad)}
+.q .exp{display:none;padding-left:38px;font-weight:600;font-size:14.5px;color:var(--muted)}
+.checked .q.no .exp{display:block}
+.fin{margin-top:40px;text-align:center;display:grid;gap:10px;justify-items:center}
+.btn{border:none;background:var(--acc);color:#fff;border-radius:14px;padding:13px 26px;font-weight:800;font-size:17px}
+.btn:disabled{opacity:.5;cursor:default}
+.btn.ghost{background:var(--surface);color:var(--ink);border:1.5px solid var(--line)}
+.warn{color:var(--bad);font-weight:700}
+#res{margin-top:34px}
+.score{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:22px;display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+.big{font:700 54px "Lora",serif;color:var(--acc)}
+.score p{margin:0;font-weight:700;font-size:17px;flex:1;min-width:220px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin:18px 0 10px;font-weight:700;font-size:14px}
+.legend span::before{content:"";display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:6px;vertical-align:-1px;background:var(--c)}
+.map{display:grid;gap:6px}
+.row{display:grid;grid-template-columns:30px 1fr auto;gap:10px;align-items:center;background:var(--surface);border:1px solid var(--line);border-left:6px solid var(--c);border-radius:12px;padding:8px 12px}
+.row .k{font-weight:800;color:var(--muted);font-size:13px}
+.row b{font-size:15.5px}.row small{display:block;color:var(--muted);font-weight:600}
+.row .v{font-weight:800;font-size:14px;color:var(--c);white-space:nowrap}
+.send{margin-top:26px;background:var(--acc-soft);border-radius:20px;padding:20px;text-align:center;display:grid;gap:10px;justify-items:center}
+.send p{margin:0;font-weight:700}
+#sendMsg{font-weight:700}
+@media (max-width:600px){.o{padding-left:0}.q .exp{padding-left:0}}
+</style>
+
+<div class="bar"><div class="bar-in"><div class="prog"><i id="pg"></i></div><span class="cnt" id="cnt">0 / 58</span></div></div>
+
+<main class="wrap">
+<header>
+  <div class="eyebrow">A2 grammar · check-up</div>
+  <h1>Привет, Надежда! Что ты уже знаешь? 🔎</h1>
+  <p>Это не экзамен, а небольшая диагностика. 29 тем уровня A2, по 2 вопроса на каждую. Так мы поймём, что ты уже уверенно знаешь, а что разберём на уроках.</p>
+  <div class="how">
+    <span>1. Выбери один вариант в каждом вопросе.</span>
+    <span>2. Если не знаешь, <b>нажми «🤷 Не знаю»</b>, а не угадывай. Это честнее и полезнее!</span>
+    <span>3. В конце нажми «Проверить» и потом «Отправить результат».</span>
+  </div>
+</header>
+
+<div id="test"></div>
+
+<div class="fin">
+  <button class="btn" id="chk">Проверить ✓</button>
+  <span class="warn" id="warn"></span>
+</div>
+
+<section id="res" hidden>
+  <h2>Твой результат</h2>
+  <div class="score" style="margin-top:12px"><div class="big" id="big"></div><p id="msg"></p></div>
+  <div class="legend"><span style="--c:var(--good)">знаешь (2/2)</span><span style="--c:var(--mid)">повторить (1/2)</span><span style="--c:var(--bad)">разобрать (0/2)</span></div>
+  <div class="map" id="map"></div>
+  <div class="send">
+    <p>Отправь результат учителю 👇</p>
+    <button class="btn" id="sendB">📩 Отправить результат</button>
+    <span id="sendMsg"></span>
+  </div>
+  <div class="fin"><button class="btn ghost" id="again">Пройти заново</button></div>
+</section>
+</main>
+
+<script>
+const $ = s => document.querySelector(s);
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+/* [stage, [topic, subtitle, [[question, hint, right, [wrong...], explanation], ...]]] */
+const STAGES = [
+ ['Stage 1', 'Present tenses, in more depth', [
+  ['Present Simple vs Present Continuous', 'привычки и факты vs то, что происходит сейчас', [
+   ['Water ___ at 100 degrees.', 'Вода кипит при 100 градусах (факт).', 'boils', ['is boiling', 'boil'], 'Факт, всегда так → Present Simple: boils.'],
+   ['Can you call later? I ___ dinner right now.', '', 'am cooking', ['cook', 'cooks'], 'right now → Present Continuous: am cooking.']]]]],
+ ['Stage 2', 'Nouns & quantifiers', [
+  ['Countable vs uncountable nouns', 'a car / cars vs water, rice, money', [
+   ['Выбери правильное предложение:', '', 'I need some information.', ['I need some informations.', 'I need an information.'], 'information — неисчисляемое: без -s и без a/an.'],
+   ['Your money ___ on the table.', '', 'is', ['are', 'am'], 'money — неисчисляемое → is.']]],
+  ['some / any / no', 'There is some milk. There isn’t any bread.', [
+   ['There isn’t ___ bread.', '', 'any', ['some', 'no'], 'В отрицании (isn’t) → any.'],
+   ['Hurry up! There’s ___ time.', 'Совсем нет времени!', 'no', ['any', 'some'], 'There’s no… = совсем нет (no без not).']]],
+  ['much / many / a lot of / a little / a few', 'сколько: исчисляемые и неисчисляемые', [
+   ['How ___ water do you drink a day?', '', 'much', ['many', 'few'], 'water неисчисляемое → how much.'],
+   ['I have ___ friends in London, maybe three.', 'несколько друзей', 'a few', ['a little', 'much'], 'Исчисляемые, немного → a few.']]],
+  ['this / that / these / those', 'повторение: близко и далеко', [
+   ['___ shoes are mine.', 'туфли у меня в руках', 'These', ['This', 'That'], 'Много и рядом → these.'],
+   ['Who is ___ man over there?', 'вон тот мужчина', 'that', ['this', 'these'], 'Один и далеко → that.']]],
+  ['Articles a / an / the / —', 'полный повтор + устойчивые выражения', [
+   ['I can play ___ piano.', '', 'the', ['a', '—'], 'Музыкальные инструменты → the piano.'],
+   ['___ dogs are friendly animals.', 'собаки вообще, в целом', '—', ['The', 'A'], 'Говорим в общем о множественном → без артикля.']]]]],
+ ['Stage 3', 'Describing & comparing', [
+  ['Comparative adjectives', 'bigger, more interesting, better', [
+   ['This film is ___ than the book.', 'interesting', 'more interesting', ['interestinger', 'most interesting'], 'Длинное прилагательное → more interesting than.'],
+   ['My English is ___ now than last year.', 'good', 'better', ['gooder', 'more good'], 'good → better (исключение).']]],
+  ['Superlative adjectives', 'the biggest, the most interesting, the best', [
+   ['Everest is ___ mountain in the world.', 'high', 'the highest', ['the higher', 'the most high'], 'Короткое прилагательное → the + -est: the highest.'],
+   ['It was ___ day of my life!', 'bad', 'the worst', ['the baddest', 'the most bad'], 'bad → the worst (исключение).']]],
+  ['as … as', 'as tall as, not as expensive as', [
+   ['Tom is 180 cm. Ben is 180 cm. Tom is ___ Ben.', '', 'as tall as', ['as taller as', 'as tall than'], 'Одинаково → as + прилагательное + as.'],
+   ['The bus is ___ the taxi.', 'Автобус не такой дорогой, как такси.', 'not as expensive as', ['not as expensive than', 'not expensive as'], 'не такой…, как → not as … as.']]],
+  ['Adverbs of manner', 'quickly, carefully, well', [
+   ['Please drive ___.', 'careful', 'carefully', ['careful', 'carefuly'], 'Как? → наречие: careful + ly = carefully.'],
+   ['She speaks English very ___.', 'хорошо', 'well', ['good', 'goodly'], 'good → наречие well (исключение).']]]]],
+ ['Stage 4', 'Pronouns & connecting words', [
+  ['Object pronouns', 'me, you, him, her, it, us, them', [
+   ['This is Anna. Do you know ___?', '', 'her', ['she', 'hers'], 'её (кого?) → her.'],
+   ['We’re at the café. Come and join ___!', '', 'us', ['we', 'our'], 'к нам (кого?) → us.']]],
+  ['Possessive pronouns', 'mine, yours, his, hers, ours, theirs', [
+   ['Is this your phone? — Yes, it’s ___.', '', 'mine', ['my', 'me'], 'Без существительного после → mine.'],
+   ['This isn’t our car. ___ is blue.', 'Наша — синяя.', 'Ours', ['Our', 'Us'], 'наша (без слова car) → ours.']]],
+  ['Reflexive pronouns', 'myself, yourself, himself…', [
+   ['Be careful! Don’t cut ___!', 'не порежься', 'yourself', ['you', 'yours'], 'себя (ты) → yourself.'],
+   ['He made this cake ___.', 'сам', 'himself', ['hisself', 'him'], 'сам (он) → himself.']]],
+  ['Prepositions of place & movement', 'in, on, under, between, from, into', [
+   ['The cat jumped ___ the box.', 'запрыгнул в коробку', 'into', ['at', 'from'], 'Движение внутрь → into.'],
+   ['The bank is ___ the café and the shop.', 'между', 'between', ['under', 'next'], 'между двумя → between.']]],
+  ['Prepositions of time', 'in June, on Monday, at 5 o’clock', [
+   ['I was born ___ 2010.', '', 'in', ['on', 'at'], 'Год → in 2010.'],
+   ['Let’s meet ___ Friday evening.', '', 'on', ['in', 'at'], 'День недели (даже с evening) → on Friday evening.']]],
+  ['Conjunctions', 'and, but, or, because, so, when', [
+   ['I was tired, ___ I went to bed early.', 'поэтому', 'so', ['because', 'but'], 'Следствие (поэтому) → so.'],
+   ['I stayed at home ___ it was raining.', 'потому что', 'because', ['so', 'but'], 'Причина (потому что) → because.']]]]],
+ ['Stage 5', 'Talking about the past', [
+  ['There was / there were', 'there is / are в прошлом', [
+   ['___ a lot of people at the party.', '', 'There were', ['There was', 'It was'], 'Много людей → there were.'],
+   ['___ any milk in the fridge yesterday.', 'Вчера в холодильнике не было молока.', 'There wasn’t', ['There weren’t', 'It wasn’t'], 'milk неисчисляемое → there wasn’t.']]],
+  ['Past Simple', 'правильные и неправильные глаголы, отрицания, вопросы', [
+   ['We ___ a new car last month.', 'buy', 'bought', ['buyed', 'buys'], 'buy → bought (неправильный глагол).'],
+   ['She didn’t ___ me yesterday.', 'call', 'call', ['called', 'calls'], 'После didn’t — глагол в начальной форме.']]],
+  ['Past Continuous', 'I was cooking when you called', [
+   ['At 8 pm yesterday we ___ dinner.', 'ужинали (в процессе)', 'were having', ['was having', 'are having'], 'we → were + -ing.'],
+   ['What ___ you doing at midnight?', '', 'were', ['was', 'did'], 'you → were … doing.']]],
+  ['Past Simple vs Past Continuous', 'I was walking when it started to rain', [
+   ['I was walking home when it ___ to rain.', '', 'started', ['was starting', 'starts'], 'Короткое действие прервало процесс → Past Simple.'],
+   ['She ___ a shower when the phone rang.', 'была в процессе', 'was taking', ['is taking', 'takes'], 'Длительное действие в прошлом → was + -ing.']]]]],
+ ['Stage 6', 'Ability, rules & advice', [
+  ['can / could', 'I can swim. I could swim when I was 5.', [
+   ['When I was five, I ___ swim.', '', 'could', ['can', 'can to'], 'Умение в прошлом → could.'],
+   ['I ___ come to the party yesterday. I was ill.', '', 'couldn’t', ['can’t', 'didn’t can'], 'Не мог в прошлом → couldn’t.']]],
+  ['must / mustn’t, have to / don’t have to', 'нужно, нельзя, не обязательно', [
+   ['It’s Sunday! You ___ get up early.', 'не нужно, не обязательно', 'don’t have to', ['mustn’t', 'doesn’t have to'], 'не обязательно → don’t have to.'],
+   ['You ___ smoke here. It’s a hospital.', 'нельзя', 'mustn’t', ['don’t have to', 'must'], 'нельзя, запрещено → mustn’t.']]],
+  ['should / shouldn’t', 'советы', [
+   ['You look tired. You ___ go to bed.', '', 'should', ['should to', 'shoulds'], 'После should — глагол без to.'],
+   ['You ___ eat so much sugar.', 'не стоит', 'shouldn’t', ['don’t should', 'not should'], 'не стоит → shouldn’t.']]],
+  ['Imperatives', 'Open the door. Don’t be late.', [
+   ['Выбери правильное предложение:', '', 'Don’t be late!', ['Not be late!', 'Don’t late!'], 'Запрет с прилагательным → Don’t be…'],
+   ['___ careful! The floor is wet.', 'Осторожно!', 'Be', ['Are', 'Is'], 'Команда → глагол в начальной форме: Be careful!']]]]],
+ ['Stage 7', 'The future & conditions', [
+  ['Verb + -ing vs verb + infinitive', 'enjoy doing / want to do', [
+   ['I enjoy ___ books.', '', 'reading', ['to read', 'read'], 'После enjoy → -ing.'],
+   ['I want ___ a doctor.', '', 'to be', ['being', 'be'], 'После want → to + глагол.']]],
+  ['Future forms', 'going to, will, Present Continuous', [
+   ['Look at those black clouds! It ___ rain.', 'видно, что будет дождь', 'is going to', ['going to', 'is go to'], 'Видим признаки → is going to.'],
+   ['I’m thirsty. — Wait, I ___ get you some water.', 'решение прямо сейчас', 'will', ['am going', 'going to'], 'Решение в момент речи → will.']]],
+  ['First conditional', 'If it rains, I will stay home.', [
+   ['If it rains tomorrow, I ___ at home.', '', 'will stay', ['would stay', 'stayed'], 'Реальное будущее → if + Present, will + глагол.'],
+   ['If you ___ hard, you will pass the exam.', '', 'study', ['will study', 'studied'], 'После if — Present Simple, не will.']]]]],
+ ['Stage 8', 'Present Perfect & full consolidation', [
+  ['Present Perfect (basic)', 'ever / never, just / already / yet', [
+   ['Have you ever ___ to London?', '', 'been', ['went', 'go'], 'have + 3-я форма: been.'],
+   ['I ___ finished my homework.', 'только что', 'have just', ['has just', 'am just'], 'I → have just + 3-я форма.']]],
+  ['Question formation, all tenses', 'Wh- questions и yes/no questions', [
+   ['Where ___ you go last summer?', '', 'did', ['were', 'do'], 'Прошлое + обычный глагол → did.'],
+   ['Выбери правильный вопрос:', '', 'What is she doing now?', ['What she is doing now?', 'What does she doing now?'], 'Вопрос: вопросительное слово + is + she + -ing.']]]]]
+];
+const TOP = [], QS = []; let tn = 0;
+STAGES.forEach(([st, title, topics]) => topics.forEach(([name, sub, qs]) => { tn++; TOP.push({ n: tn, name, sub, st, q: [] }); qs.forEach(q => { const id = QS.length; QS.push({ id, t: tn - 1, s: q[0], h: q[1], a: q[2], o: shuffle([q[2], ...q[3]]), e: q[4], pick: null }); TOP[tn - 1].q.push(id); }); }));
+function render(){
+  let html = '', num = 0, ti = 0;
+  STAGES.forEach(([st, title, topics]) => {
+    html += `<section class="stage"><h2><small>${st}</small>${title}</h2><div class="qs">`;
+    topics.forEach(() => { TOP[ti].q.forEach(id => { const q = QS[id]; num++;
+      html += `<div class="q" data-id="${id}"><div class="top"><span class="n">${num}</span><div class="t">${q.s.replace('___', '<span class="bl">___</span>')}${q.h ? `<span class="hint">${q.h}</span>` : ''}</div></div><div class="o">${q.o.map(x => `<button data-v="${x.replace(/"/g, '&quot;')}">${x}</button>`).join('')}<button class="idk" data-v="?">🤷 Не знаю</button></div><div class="exp"></div></div>`; }); ti++; });
+    html += '</div></section>'; });
+  $('#test').innerHTML = html; upd();
+}
+const upd = () => { const d = QS.filter(q => q.pick !== null).length; $('#cnt').textContent = `${d} / ${QS.length}`; $('#pg').style.width = d / QS.length * 100 + '%'; };
+let checked = false;
+$('#test').addEventListener('click', e => { const b = e.target.closest('button'); if (!b || checked) return; const box = b.closest('.q'); const q = QS[+box.dataset.id];
+  q.pick = b.dataset.v; box.querySelectorAll('.o button').forEach(x => x.classList.toggle('sel', x === b)); upd(); $('#warn').textContent = ''; });
+$('#chk').onclick = () => {
+  const left = QS.filter(q => q.pick === null);
+  if (left.length){ $('#warn').textContent = `Осталось ответить: ${left.length}. Если не знаешь, жми «🤷 Не знаю».`; document.querySelector(`.q[data-id="${left[0].id}"]`).scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+  checked = true; document.body.classList.add('checked'); $('#chk').hidden = true;
+  QS.forEach(q => { const box = document.querySelector(`.q[data-id="${q.id}"]`); const ok = q.pick === q.a; box.classList.add(ok ? 'ok' : 'no');
+    box.querySelectorAll('.o button').forEach(x => { if (x.dataset.v === q.a) x.classList.add('right'); else if (x.classList.contains('sel')) x.classList.add('wrong'); });
+    box.querySelector('.exp').textContent = '💡 ' + q.e; });
+  const ok = QS.filter(q => q.pick === q.a).length, pct = Math.round(ok / QS.length * 100);
+  $('#big').textContent = `${ok}/${QS.length}`;
+  const weak = TOP.filter(t => t.q.filter(id => QS[id].pick === QS[id].a).length < 2).length;
+  $('#msg').textContent = pct >= 90 ? `${pct}% — отлично! A2 почти весь в кармане 🎉` : pct >= 60 ? `${pct}% — хорошая база! Есть ${weak} тем, которые подтянем на уроках 💪` : `${pct}% — нормально для старта! Теперь мы точно знаем, с чего начать 🌱`;
+  $('#map').innerHTML = TOP.map(t => { const s = t.q.filter(id => QS[id].pick === QS[id].a).length; const c = s === 2 ? 'var(--good)' : s === 1 ? 'var(--mid)' : 'var(--bad)';
+    return `<div class="row" style="--c:${c}"><span class="k">${t.n}</span><div><b>${t.name}</b><small>${t.sub}</small></div><span class="v">${s === 2 ? '✓ знаешь' : s === 1 ? '1/2 повторить' : '0/2 разобрать'}</span></div>`; }).join('');
+  $('#res').hidden = false; $('#res').scrollIntoView({ behavior: 'smooth' });
+};
+$('#again').onclick = () => { checked = false; document.body.classList.remove('checked'); QS.forEach(q => { q.pick = null; q.o = shuffle(q.o); }); render(); $('#chk').hidden = false; $('#res').hidden = true; $('#sendB').disabled = false; $('#sendMsg').textContent = ''; scrollTo({ top: 0, behavior: 'smooth' }); };
+render();
+
+/* send results */
+const SEND_URL = 'https://script.google.com/macros/s/AKfycby4sacYRD9z4OLLtRosPU0xPdJqrm03axtxiHspuuy1RjORxGvqhRwj5iYqPi004zNq/exec';
+$('#sendB').onclick = async () => {
+  if (!checked){ $('#sendMsg').textContent = 'Сначала нажми «Проверить» 🙂'; return; }
+  const ok = QS.filter(q => q.pick === q.a).length;
+  const parts = TOP.map(t => { const s = t.q.filter(id => QS[id].pick === QS[id].a).length; return `${s === 2 ? '✅' : s === 1 ? '🟡' : '🔴'} ${t.n}. ${t.name}: ${s}/2`; }).join('\n');
+  const mistakes = QS.filter(q => q.pick !== q.a).map(q => `${TOP[q.t].n}. ${TOP[q.t].name} — ${q.s.replace('___', '___')}${q.h ? ' (' + q.h + ')' : ''} → ${q.pick === '?' ? 'не знаю' : q.pick} (нужно: ${q.a})`);
+  const data = { student: 'Надежда', hw: 'A2 grammar check · 29 topics', score: `${ok}/${QS.length}`, pct: Math.round(ok / QS.length * 100) + '%', parts, mistakes };
+  $('#sendB').disabled = true; $('#sendMsg').textContent = 'Отправляю…';
+  try { await fetch(SEND_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(data) }); $('#sendMsg').textContent = 'Отправлено ✓ Спасибо!'; }
+  catch (e) { $('#sendB').disabled = false; $('#sendMsg').textContent = 'Не получилось отправить. Проверь интернет и нажми ещё раз.'; }
+};
+</script>
