@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="ru">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nadezhda · A1 Grammar Check</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lora:wght@600;700&family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,700;6..12,800&display=swap">
+<style>
+:root{--bg:#FAF6F0;--surface:#FFFFFF;--ink:#2E2723;--muted:#7A6F67;--line:#E9E1D7;--acc:#C8704F;--acc-soft:#F8E6DD;--acc-ink:#8E4329;
+  --good:#2F8A57;--good-soft:#E0F2E7;--mid:#C89211;--mid-soft:#FBF0D3;--bad:#C94040;--bad-soft:#FBE4E4}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#191512;--surface:#231E1A;--ink:#F1E9E2;--muted:#B0A49A;--line:#382F29;--acc:#E7966F;--acc-soft:#3D251B;--acc-ink:#F6C6AE;--good:#5CCB8C;--good-soft:#173324;--mid:#F0C14E;--mid-soft:#3A2F12;--bad:#FF7A7A;--bad-soft:#3D1F1F}}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#191512;--surface:#231E1A;--ink:#F1E9E2;--muted:#B0A49A;--line:#382F29;--acc:#E7966F;--acc-soft:#3D251B;--acc-ink:#F6C6AE;--good:#5CCB8C;--good-soft:#173324;--mid:#F0C14E;--mid-soft:#3A2F12;--bad:#FF7A7A;--bad-soft:#3D1F1F}
+*{box-sizing:border-box}[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 "Nunito Sans",system-ui,sans-serif}
+h1,h2,h3{font-family:"Lora",Georgia,serif;margin:0;line-height:1.15}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.bar{position:sticky;top:0;z-index:10;background:color-mix(in srgb,var(--bg) 90%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.bar-in{max-width:860px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:12px}
+.prog{flex:1;height:10px;background:var(--line);border-radius:99px;overflow:hidden}
+.prog i{display:block;height:100%;width:0;background:var(--acc);border-radius:99px;transition:width .3s}
+.cnt{font-weight:800;font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.wrap{max-width:860px;margin:0 auto;padding:0 16px 80px}
+header{padding:36px 0 8px}
+.eyebrow{font-size:12.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--acc)}
+header h1{font-size:clamp(32px,6vw,46px);margin-top:6px}
+header p{color:var(--muted);max-width:60ch;margin:12px 0 0;font-size:16.5px}
+.how{display:grid;gap:6px;margin-top:16px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 18px;font-weight:600}
+.how b{color:var(--acc-ink)}
+.stage{margin-top:34px}
+.stage h2{font-size:21px;color:var(--acc-ink);display:flex;gap:10px;align-items:baseline}
+.stage h2 small{font:800 12px "Nunito Sans",sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.qs{display:grid;gap:10px;margin-top:12px}
+.q{background:var(--surface);border:1.5px solid var(--line);border-radius:16px;padding:14px 16px;display:grid;gap:10px}
+.q .top{display:flex;gap:10px;align-items:flex-start}
+.q .n{flex:none;width:28px;height:28px;border-radius:50%;background:var(--acc);color:#fff;display:grid;place-items:center;font-weight:800;font-size:13px;margin-top:1px}
+.q .t{font-weight:700;font-size:17px}
+.q .t .bl{display:inline-block;min-width:64px;border-bottom:2px solid var(--muted);text-align:center;color:var(--acc-ink)}
+.q .hint{display:block;color:var(--muted);font-weight:600;font-size:14px;margin-top:2px}
+.o{display:flex;flex-wrap:wrap;gap:8px;padding-left:38px}
+.o button{border:1.5px solid var(--line);background:var(--bg);border-radius:12px;padding:8px 14px;font-weight:700;font-size:15.5px;text-align:left}
+.o button:hover{border-color:var(--acc)}
+.o button.sel{background:var(--acc-soft);border-color:var(--acc);color:var(--acc-ink)}
+.o button.idk{border-style:dashed;color:var(--muted);font-weight:600}
+.o button.idk.sel{background:var(--line);border-color:var(--muted);color:var(--ink)}
+.checked .o button{cursor:default}
+.checked .o button.right{background:var(--good-soft);border-color:var(--good);color:var(--good)}
+.checked .o button.sel.wrong{background:var(--bad-soft);border-color:var(--bad);color:var(--bad);text-decoration:line-through}
+.q.ok{border-color:var(--good)}.q.no{border-color:var(--bad)}
+.q .exp{display:none;padding-left:38px;font-weight:600;font-size:14.5px;color:var(--muted)}
+.checked .q.no .exp{display:block}
+.fin{margin-top:40px;text-align:center;display:grid;gap:10px;justify-items:center}
+.btn{border:none;background:var(--acc);color:#fff;border-radius:14px;padding:13px 26px;font-weight:800;font-size:17px}
+.btn:disabled{opacity:.5;cursor:default}
+.btn.ghost{background:var(--surface);color:var(--ink);border:1.5px solid var(--line)}
+.warn{color:var(--bad);font-weight:700}
+#res{margin-top:34px}
+.score{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:22px;display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+.big{font:700 54px "Lora",serif;color:var(--acc)}
+.score p{margin:0;font-weight:700;font-size:17px;flex:1;min-width:220px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin:18px 0 10px;font-weight:700;font-size:14px}
+.legend span::before{content:"";display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:6px;vertical-align:-1px;background:var(--c)}
+.map{display:grid;gap:6px}
+.row{display:grid;grid-template-columns:30px 1fr auto;gap:10px;align-items:center;background:var(--surface);border:1px solid var(--line);border-left:6px solid var(--c);border-radius:12px;padding:8px 12px}
+.row .k{font-weight:800;color:var(--muted);font-size:13px}
+.row b{font-size:15.5px}.row small{display:block;color:var(--muted);font-weight:600}
+.row .v{font-weight:800;font-size:14px;color:var(--c);white-space:nowrap}
+.send{margin-top:26px;background:var(--acc-soft);border-radius:20px;padding:20px;text-align:center;display:grid;gap:10px;justify-items:center}
+.send p{margin:0;font-weight:700}
+#sendMsg{font-weight:700}
+@media (max-width:600px){.o{padding-left:0}.q .exp{padding-left:0}}
+</style>
+
+<div class="bar"><div class="bar-in"><div class="prog"><i id="pg"></i></div><span class="cnt" id="cnt">0 / 44</span></div></div>
+
+<main class="wrap">
+<header>
+  <div class="eyebrow">A1 grammar · check-up</div>
+  <h1>Привет, Надежда! Что ты уже знаешь? 🔎</h1>
+  <p>Это не экзамен, а небольшая диагностика. 22 темы уровня A1, по 2 вопроса на каждую. Так мы поймём, что ты уже уверенно знаешь, а что разберём на уроках.</p>
+  <div class="how">
+    <span>1. Выбери один вариант в каждом вопросе.</span>
+    <span>2. Если не знаешь, <b>нажми «🤷 Не знаю»</b>, а не угадывай. Это честнее и полезнее!</span>
+    <span>3. В конце нажми «Проверить» и потом «Отправить результат».</span>
+  </div>
+</header>
+
+<div id="test"></div>
+
+<div class="fin">
+  <button class="btn" id="chk">Проверить ✓</button>
+  <span class="warn" id="warn"></span>
+</div>
+
+<section id="res" hidden>
+  <h2>Твой результат</h2>
+  <div class="score" style="margin-top:12px"><div class="big" id="big"></div><p id="msg"></p></div>
+  <div class="legend"><span style="--c:var(--good)">знаешь (2/2)</span><span style="--c:var(--mid)">повторить (1/2)</span><span style="--c:var(--bad)">разобрать (0/2)</span></div>
+  <div class="map" id="map"></div>
+  <div class="send">
+    <p>Отправь результат учителю 👇</p>
+    <button class="btn" id="sendB">📩 Отправить результат</button>
+    <span id="sendMsg"></span>
+  </div>
+  <div class="fin"><button class="btn ghost" id="again">Пройти заново</button></div>
+</section>
+</main>
+
+<script>
+const $ = s => document.querySelector(s);
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+/* [stage, [topic, subtitle, [[question, hint, right, [wrong...], explanation], ...]]] */
+const STAGES = [
+ ['Stage 1', 'The basics of communication', [
+  ['Personal pronouns', 'I, you, he, she, it, we, they', [
+   ['This is Maria. ___ is my friend.', '', 'She', ['He', 'It'], 'Мария → she (она).'],
+   ['Tom and I are students. ___ are in class now.', 'Том и я…', 'We', ['They', 'You'], 'Том и я = мы → we.']]],
+  ['Verb “to be”', 'am / is / are', [
+   ['___ you a student?', '', 'Are', ['Is', 'Do'], 'you → are. Вопрос: Are you…?'],
+   ['My sister ___ at home now.', 'Моей сестры сейчас нет дома.', 'isn’t', ['aren’t', 'doesn’t'], 'she → is not = isn’t.']]],
+  ['Possessive adjectives', 'my, your, his, her, its, our, their', [
+   ['I have a cat. ___ cat is black.', '', 'My', ['Me', 'I'], 'мой → my.'],
+   ['Anna and Tom have a car. ___ car is red.', '', 'Their', ['They', 'There'], 'их → their.']]]]],
+ ['Stage 2', 'Naming & describing things', [
+  ['Singular & plural nouns', 'a book / two books, child → children', [
+   ['I have two ___.', 'box', 'boxes', ['boxs', 'box'], 'После -x добавляем -es: boxes.'],
+   ['She has three ___.', 'child', 'children', ['childs', 'childrens'], 'child → children (исключение).']]],
+  ['this / that / these / those', 'близко и далеко', [
+   ['___ is my phone.', 'телефон у меня в руке', 'This', ['These', 'Those'], 'Один предмет рядом → this.'],
+   ['Look at ___ birds in the sky!', 'птицы далеко', 'those', ['that', 'this'], 'Много и далеко → those.']]],
+  ['Articles a / an', 'a cat, an apple', [
+   ['I eat ___ apple every day.', '', 'an', ['a', '—'], 'Перед гласным звуком → an.'],
+   ['She is ___ teacher.', '', 'a', ['an', '—'], 'Профессия → a teacher.']]],
+  ['Adjectives & word order', 'прилагательное перед существительным', [
+   ['Выбери правильное предложение:', '', 'It’s a big house.', ['It’s a house big.', 'It’s big a house.'], 'Прилагательное перед существительным: a big house.'],
+   ['Выбери правильное предложение:', '', 'They are nice people.', ['They are nices people.', 'They are people nice.'], 'У прилагательных нет -s: nice people.']]]]],
+ ['Stage 3', 'Existence, location & possession', [
+  ['There is / there are', 'что где есть', [
+   ['___ a cat in the garden.', '', 'There is', ['There are', 'It is'], 'Один предмет → there is.'],
+   ['___ two cafés in my street.', '', 'There are', ['There is', 'They are'], 'Много → there are.']]],
+  ['Prepositions of place', 'in, on, under, next to', [
+   ['The cat is ___ the box.', 'кот внутри коробки', 'in', ['on', 'under'], 'внутри → in.'],
+   ['The bank is ___ the café.', 'банк рядом с кафе', 'next to', ['under', 'at'], 'рядом → next to.']]],
+  ['Have got / has got', 'I’ve got, she’s got', [
+   ['I ___ a dog.', '', 'have got', ['has got', 'am got'], 'I → have got.'],
+   ['She ___ blue eyes.', '', 'has got', ['have got', 'is got'], 'she → has got.']]]]],
+ ['Stage 4', 'Actions & routines', [
+  ['Present Simple: statements', 'I work, she works', [
+   ['My dad ___ in a bank.', '', 'works', ['work', 'working'], 'he / she → глагол + s: works.'],
+   ['I ___ coffee every morning.', '', 'drink', ['drinks', 'am drink'], 'I → без -s: drink.']]],
+  ['Present Simple: negatives & questions', 'don’t / doesn’t, do / does', [
+   ['___ she like pizza?', '', 'Does', ['Do', 'Is'], 'she → Does she like…?'],
+   ['I ___ like cold weather.', '', 'don’t', ['doesn’t', 'am not'], 'I → don’t.']]],
+  ['Adverbs of frequency', 'always, usually, sometimes, never', [
+   ['Выбери правильное предложение:', '', 'I always get up at 7.', ['I get always up at 7.', 'Always I get up at 7.'], 'Наречие перед глаголом: I always get up.'],
+   ['Выбери правильное предложение:', '', 'She is never late.', ['She never is late.', 'Never she is late.'], 'С to be наречие после am / is / are: She is never late.']]],
+  ['Object pronouns', 'me, you, him, her, it, us, them', [
+   ['I love my mum. I call ___ every day.', '', 'her', ['she', 'hers'], 'её (кого?) → her.'],
+   ['Where are my keys? I can’t find ___.', '', 'them', ['they', 'it'], 'их (ключи) → them.']]]]],
+ ['Stage 5', 'Ability & instructions', [
+  ['Can / can’t', 'I can swim. Can I…?', [
+   ['She ___ swim very well.', '', 'can', ['cans', 'can to'], 'После can просто глагол, без -s и to.'],
+   ['___ I open the window?', 'Можно открыть окно?', 'Can', ['Do', 'Am'], 'Просьба / разрешение → Can I…?']]],
+  ['Imperatives', 'Sit down. Don’t run.', [
+   ['___ down, please!', 'Садись, пожалуйста!', 'Sit', ['Sits', 'To sit'], 'Просьба/команда = глагол без to: Sit down.'],
+   ['___ run in the classroom!', 'Не бегай в классе!', 'Don’t', ['Not', 'No'], 'Запрет → Don’t + глагол.']]]]],
+ ['Stage 6', 'Time & questions', [
+  ['Prepositions of time', 'in May, on Monday, at 6 o’clock', [
+   ['My birthday is ___ May.', '', 'in', ['on', 'at'], 'Месяц → in May.'],
+   ['See you ___ Monday!', '', 'on', ['in', 'at'], 'День недели → on Monday.']]],
+  ['Question words', 'what, where, when, who, how many…', [
+   ['___ do you live? — In Moscow.', '', 'Where', ['When', 'Who'], 'Где → where.'],
+   ['___ apples do you want? — Three.', '', 'How many', ['How much', 'What'], 'Можно посчитать → how many.']]]]],
+ ['Stage 7', 'What’s happening now', [
+  ['Present Continuous', 'I’m working now', [
+   ['Look! It ___ .', 'Смотри! Идёт дождь.', 'is raining', ['rains', 'raining'], 'Сейчас → is + -ing.'],
+   ['I ___ TV now.', '', 'am watching', ['watch', 'watching'], 'Сейчас → am + -ing.']]],
+  ['Present Simple vs Present Continuous', 'обычно vs прямо сейчас', [
+   ['She usually ___ to work by bus.', '', 'goes', ['is going', 'go'], 'usually = обычно → Present Simple.'],
+   ['Shh! The baby ___ now.', '', 'is sleeping', ['sleeps', 'sleep'], 'now = сейчас → Present Continuous.']]]]],
+ ['Stage 8', 'Talking about the past', [
+  ['Past Simple: “to be”', 'was / were', [
+   ['I ___ at home yesterday.', '', 'was', ['were', 'am'], 'I → was.'],
+   ['They ___ tired last night.', '', 'were', ['was', 'are'], 'they → were.']]],
+  ['Past Simple: verbs', 'worked, watched / went, saw, had', [
+   ['Yesterday I ___ a film.', '', 'watched', ['watch', 'watches'], 'Прошлое → -ed: watched.'],
+   ['Last summer we ___ to Sochi.', '', 'went', ['goed', 'go'], 'go → went (неправильный глагол).']]]]]
+];
+const TOP = [], QS = []; let tn = 0;
+STAGES.forEach(([st, title, topics]) => topics.forEach(([name, sub, qs]) => { tn++; TOP.push({ n: tn, name, sub, st, q: [] }); qs.forEach(q => { const id = QS.length; QS.push({ id, t: tn - 1, s: q[0], h: q[1], a: q[2], o: shuffle([q[2], ...q[3]]), e: q[4], pick: null }); TOP[tn - 1].q.push(id); }); }));
+function render(){
+  let html = '', num = 0, ti = 0;
+  STAGES.forEach(([st, title, topics]) => {
+    html += `<section class="stage"><h2><small>${st}</small>${title}</h2><div class="qs">`;
+    topics.forEach(() => { TOP[ti].q.forEach(id => { const q = QS[id]; num++;
+      html += `<div class="q" data-id="${id}"><div class="top"><span class="n">${num}</span><div class="t">${q.s.replace('___', '<span class="bl">___</span>')}${q.h ? `<span class="hint">${q.h}</span>` : ''}</div></div><div class="o">${q.o.map(x => `<button data-v="${x.replace(/"/g, '&quot;')}">${x}</button>`).join('')}<button class="idk" data-v="?">🤷 Не знаю</button></div><div class="exp"></div></div>`; }); ti++; });
+    html += '</div></section>'; });
+  $('#test').innerHTML = html; upd();
+}
+const upd = () => { const d = QS.filter(q => q.pick !== null).length; $('#cnt').textContent = `${d} / ${QS.length}`; $('#pg').style.width = d / QS.length * 100 + '%'; };
+let checked = false;
+$('#test').addEventListener('click', e => { const b = e.target.closest('button'); if (!b || checked) return; const box = b.closest('.q'); const q = QS[+box.dataset.id];
+  q.pick = b.dataset.v; box.querySelectorAll('.o button').forEach(x => x.classList.toggle('sel', x === b)); upd(); $('#warn').textContent = ''; });
+$('#chk').onclick = () => {
+  const left = QS.filter(q => q.pick === null);
+  if (left.length){ $('#warn').textContent = `Осталось ответить: ${left.length}. Если не знаешь, жми «🤷 Не знаю».`; document.querySelector(`.q[data-id="${left[0].id}"]`).scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+  checked = true; document.body.classList.add('checked'); $('#chk').hidden = true;
+  QS.forEach(q => { const box = document.querySelector(`.q[data-id="${q.id}"]`); const ok = q.pick === q.a; box.classList.add(ok ? 'ok' : 'no');
+    box.querySelectorAll('.o button').forEach(x => { if (x.dataset.v === q.a) x.classList.add('right'); else if (x.classList.contains('sel')) x.classList.add('wrong'); });
+    box.querySelector('.exp').textContent = '💡 ' + q.e; });
+  const ok = QS.filter(q => q.pick === q.a).length, pct = Math.round(ok / QS.length * 100);
+  $('#big').textContent = `${ok}/${QS.length}`;
+  const weak = TOP.filter(t => t.q.filter(id => QS[id].pick === QS[id].a).length < 2).length;
+  $('#msg').textContent = pct >= 90 ? `${pct}% — отлично! A1 почти весь в кармане 🎉` : pct >= 60 ? `${pct}% — хорошая база! Есть ${weak} тем, которые подтянем на уроках 💪` : `${pct}% — нормально для старта! Теперь мы точно знаем, с чего начать 🌱`;
+  $('#map').innerHTML = TOP.map(t => { const s = t.q.filter(id => QS[id].pick === QS[id].a).length; const c = s === 2 ? 'var(--good)' : s === 1 ? 'var(--mid)' : 'var(--bad)';
+    return `<div class="row" style="--c:${c}"><span class="k">${t.n}</span><div><b>${t.name}</b><small>${t.sub}</small></div><span class="v">${s === 2 ? '✓ знаешь' : s === 1 ? '1/2 повторить' : '0/2 разобрать'}</span></div>`; }).join('');
+  $('#res').hidden = false; $('#res').scrollIntoView({ behavior: 'smooth' });
+};
+$('#again').onclick = () => { checked = false; document.body.classList.remove('checked'); QS.forEach(q => { q.pick = null; q.o = shuffle(q.o); }); render(); $('#chk').hidden = false; $('#res').hidden = true; $('#sendB').disabled = false; $('#sendMsg').textContent = ''; scrollTo({ top: 0, behavior: 'smooth' }); };
+render();
+
+/* send results */
+const SEND_URL = 'https://script.google.com/macros/s/AKfycby4sacYRD9z4OLLtRosPU0xPdJqrm03axtxiHspuuy1RjORxGvqhRwj5iYqPi004zNq/exec';
+$('#sendB').onclick = async () => {
+  if (!checked){ $('#sendMsg').textContent = 'Сначала нажми «Проверить» 🙂'; return; }
+  const ok = QS.filter(q => q.pick === q.a).length;
+  const parts = TOP.map(t => { const s = t.q.filter(id => QS[id].pick === QS[id].a).length; return `${s === 2 ? '✅' : s === 1 ? '🟡' : '🔴'} ${t.n}. ${t.name}: ${s}/2`; }).join('\n');
+  const mistakes = QS.filter(q => q.pick !== q.a).map(q => `${TOP[q.t].n}. ${TOP[q.t].name} — ${q.s.replace('___', '___')}${q.h ? ' (' + q.h + ')' : ''} → ${q.pick === '?' ? 'не знаю' : q.pick} (нужно: ${q.a})`);
+  const data = { student: 'Надежда', hw: 'A1 grammar check · 22 topics', score: `${ok}/${QS.length}`, pct: Math.round(ok / QS.length * 100) + '%', parts, mistakes };
+  $('#sendB').disabled = true; $('#sendMsg').textContent = 'Отправляю…';
+  try { await fetch(SEND_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(data) }); $('#sendMsg').textContent = 'Отправлено ✓ Спасибо!'; }
+  catch (e) { $('#sendB').disabled = false; $('#sendMsg').textContent = 'Не получилось отправить. Проверь интернет и нажми ещё раз.'; }
+};
+</script>
